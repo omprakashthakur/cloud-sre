@@ -561,3 +561,4 @@ MIT License - feel free to use this project for your own learning and interview 
 4. ✅ Practice incident response scenarios
 5. ✅ Review monitoring dashboards
 6. ✅ Prepare to explain architecture decisions
+# cloud-sre

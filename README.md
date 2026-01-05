@@ -7,6 +7,21 @@
 [![Docker](https://img.shields.io/badge/Docker-20.10+-blue.svg)](https://www.docker.com/)
 [![Terraform](https://img.shields.io/badge/Terraform-1.5+-purple.svg)](https://www.terraform.io/)
 
+---
+
+## 📚 Documentation
+
+| Document | Purpose |
+|----------|---------|
+| **[README.md](README.md)** *(this file)* | Complete setup and usage guide |
+| **[SETUP_COMPLETE.md](SETUP_COMPLETE.md)** | Setup status and next steps |
+| **[CHANGELOG.md](CHANGELOG.md)** | Version history and changes |
+| **[FIXES_APPLIED.md](FIXES_APPLIED.md)** | Detailed fix documentation |
+| **[QUICK_REFERENCE.md](QUICK_REFERENCE.md)** | Command quick reference |
+| **[DOCUMENTATION_INDEX.md](DOCUMENTATION_INDEX.md)** | Complete documentation guide |
+
+---
+
 ## 📋 Table of Contents
 
 - [Overview](#overview)
@@ -18,6 +33,7 @@
 - [Testing](#testing)
 - [Deployment](#deployment)
 - [Monitoring](#monitoring)
+- [Troubleshooting](#troubleshooting)
 - [Project Structure](#project-structure)
 - [Interview Preparation](#interview-preparation)
 
@@ -473,6 +489,74 @@ cloud-sre/
 
 ## 🛠️ Troubleshooting
 
+### Common Issues & Solutions
+
+#### ❌ Issue: `docker-compose: command not found`
+**Cause**: System uses Docker Compose v2 (integrated into Docker CLI)  
+**Solution**: All commands updated to use `docker compose` instead of `docker-compose`
+```bash
+# ✅ Correct (v2)
+docker compose up -d
+docker compose ps
+docker compose logs app
+
+# ❌ Old syntax (v1)
+docker-compose up -d
+```
+**Status**: ✅ Fixed in Makefile and all scripts
+
+---
+
+#### ❌ Issue: `ModuleNotFoundError: No module named 'pythonjsonlogger'`
+**Cause**: Package name mismatch between pip and import statement  
+**Solution**: Removed dependency, using standard Python logging
+```python
+# ✅ New implementation (standard library)
+import logging
+formatter = logging.Formatter(
+    '{"time": "%(asctime)s", "level": "%(levelname)s", "message": "%(message)s"}'
+)
+
+# ❌ Old implementation (removed)
+from pythonjsonlogger import jsonlogger
+```
+**Status**: ✅ Fixed in [src/app/app.py](src/app/app.py)
+
+---
+
+#### ❌ Issue: `psycopg2-binary` build fails
+**Cause**: Missing PostgreSQL development libraries (`libpq-dev`, `gcc`)  
+**Solution**: Commented out for local dev (Docker image has it pre-installed)
+```txt
+# requirements.txt
+flask>=2.3.0
+prometheus-client>=0.17.0
+# psycopg2-binary>=2.9.0  # Commented: Docker image includes this
+```
+**Note**: Only affects local Python environment, not Docker containers  
+**Status**: ✅ Fixed in [requirements.txt](requirements.txt)
+
+---
+
+#### ⚠️ Warning: `version` field is obsolete
+**Cause**: Docker Compose v2 doesn't use version field  
+**Solution**: Removed from docker-compose.local.yml
+```yaml
+# ✅ New format (no version)
+services:
+  app:
+    build: .
+
+# ❌ Old format
+version: '3.8'
+services:
+  app:
+    build: .
+```
+**Status**: ✅ Fixed in [docker-compose.local.yml](docker-compose.local.yml)
+
+---
+
 ### Local Development Issues
 
 **Docker services won't start:**
@@ -480,26 +564,55 @@ cloud-sre/
 # Check Docker daemon
 sudo systemctl status docker
 
-# Check ports
-sudo netstat -tulpn | grep -E '(8080|3000|9090)'
+# Check ports in use
+sudo ss -tulpn | grep -E '(8080|3000|9090|5432|6379)'
 
 # Clean and restart
 make clean-docker
 make docker-up
+
+# Force rebuild if needed
+docker compose -f docker-compose.local.yml up --build -d
 ```
 
 **Application errors:**
 ```bash
-# Check logs
+# Check logs for all services
 make logs-app
+docker compose -f docker-compose.local.yml logs
 
-# Check dependencies
-cd src/app && pip list
+# Check specific service
+docker compose -f docker-compose.local.yml logs app
+docker compose -f docker-compose.local.yml logs postgres
 
-# Rebuild
-make docker-down
-make build
-make docker-up
+# Check container health
+docker compose -f docker-compose.local.yml ps
+
+# Rebuild app container
+docker compose -f docker-compose.local.yml up --build app -d
+```
+
+**Requirements installation fails:**
+```bash
+# Install system dependencies (Ubuntu/Debian)
+sudo apt-get update
+sudo apt-get install -y python3-dev libpq-dev gcc
+
+# For Docker builds (already handled)
+# Just rebuild: docker compose -f docker-compose.local.yml up --build -d
+```
+
+**Port already in use:**
+```bash
+# Find process using port 8080
+sudo ss -tulpn | grep 8080
+
+# Kill process if needed
+sudo kill -9 <PID>
+
+# Or change port in docker-compose.local.yml
+ports:
+  - "8081:8080"  # Use 8081 on host instead
 ```
 
 ### Deployment Issues
@@ -527,6 +640,65 @@ aws logs tail /ecs/ai-processor-staging --follow
 # Check target group health
 aws elbv2 describe-target-health --target-group-arn <arn>
 ```
+
+### Monitoring Issues
+
+**Grafana can't connect to Prometheus:**
+```bash
+# Check Prometheus is running
+docker compose -f docker-compose.local.yml ps prometheus
+curl http://localhost:9090/-/healthy
+
+# Add data source in Grafana
+# URL: http://prometheus:9090
+# Access: Server (default)
+```
+
+**Metrics not showing:**
+```bash
+# Check app is exposing metrics
+curl http://localhost:8080/metrics
+
+# Check Prometheus targets
+# Open: http://localhost:9090/targets
+# Should see: app:8080 with state=UP
+```
+
+---
+
+### 📋 Quick Reference
+
+| Service    | Local URL                  | Docker Service Name |
+|------------|----------------------------|---------------------|
+| App API    | http://localhost:8080      | app                 |
+| Grafana    | http://localhost:3000      | grafana             |
+| Prometheus | http://localhost:9090      | prometheus          |
+| Nginx      | http://localhost:80        | nginx               |
+| PostgreSQL | localhost:5432             | postgres            |
+| Redis      | localhost:6379             | redis               |
+
+**Default Credentials:**
+- Grafana: admin / admin (change on first login)
+
+**Useful Commands:**
+```bash
+# View all logs
+docker compose -f docker-compose.local.yml logs -f
+
+# Restart single service
+docker compose -f docker-compose.local.yml restart app
+
+# Check service health
+curl http://localhost:8080/health
+
+# Run tests
+make test-api
+make load-test
+```
+
+---
+
+**For detailed fix information, see [CHANGELOG.md](CHANGELOG.md)**
 
 ## 🤝 Contributing
 

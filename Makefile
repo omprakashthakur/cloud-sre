@@ -54,7 +54,7 @@ run-local: ## Run application locally
 
 docker-up: ## Start Docker Compose services
 	@echo '$(BLUE)Starting Docker Compose services...$(NC)'
-	docker-compose -f docker-compose.local.yml up -d
+	docker compose -f docker-compose.local.yml up -d
 	@echo '$(GREEN)✓ Services started$(NC)'
 	@echo 'Application: http://localhost:8080'
 	@echo 'Grafana: http://localhost:3000 (admin/admin)'
@@ -62,11 +62,11 @@ docker-up: ## Start Docker Compose services
 
 docker-down: ## Stop Docker Compose services
 	@echo '$(BLUE)Stopping Docker Compose services...$(NC)'
-	docker-compose -f docker-compose.local.yml down
+	docker compose -f docker-compose.local.yml down
 	@echo '$(GREEN)✓ Services stopped$(NC)'
 
 docker-logs: ## Show Docker Compose logs
-	docker-compose -f docker-compose.local.yml logs -f
+	docker compose -f docker-compose.local.yml logs -f
 
 docker-restart: docker-down docker-up ## Restart Docker Compose services
 
@@ -142,13 +142,13 @@ push-image: ecr-login ## Push Docker image to ECR
 
 # Monitoring commands
 logs-app: ## Show application logs (Docker)
-	docker-compose -f docker-compose.local.yml logs -f app
+	docker compose -f docker-compose.local.yml logs -f app
 
 logs-prometheus: ## Show Prometheus logs
-	docker-compose -f docker-compose.local.yml logs -f prometheus
+	docker compose -f docker-compose.local.yml logs -f prometheus
 
 logs-grafana: ## Show Grafana logs
-	docker-compose -f docker-compose.local.yml logs -f grafana
+	docker compose -f docker-compose.local.yml logs -f grafana
 
 open-grafana: ## Open Grafana in browser
 	@echo '$(BLUE)Opening Grafana...$(NC)'
@@ -194,7 +194,7 @@ clean: ## Clean up generated files
 
 clean-docker: ## Remove Docker containers and volumes
 	@echo '$(BLUE)Cleaning Docker resources...$(NC)'
-	docker-compose -f docker-compose.local.yml down -v
+	docker compose -f docker-compose.local.yml down -v
 	docker system prune -f
 	@echo '$(GREEN)✓ Docker cleanup completed$(NC)'
 
@@ -214,4 +214,4 @@ dev-setup: install docker-up ## Complete development setup
 
 status: ## Show service status
 	@echo '$(BLUE)Service Status:$(NC)'
-	@docker-compose -f docker-compose.local.yml ps
+	@docker compose -f docker-compose.local.yml ps

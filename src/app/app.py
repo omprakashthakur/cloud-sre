@@ -5,17 +5,16 @@ Simulates a high-performance AI data processing service with monitoring and obse
 import os
 import time
 import logging
+import json
 from flask import Flask, request, jsonify
 from prometheus_client import Counter, Histogram, Gauge, generate_latest, REGISTRY
-from python_json_logger import jsonlogger
 
-# Setup JSON logging for better log aggregation
-logger = logging.getLogger()
-logHandler = logging.StreamHandler()
-formatter = jsonlogger.JsonFormatter()
-logHandler.setFormatter(formatter)
-logger.addHandler(logHandler)
-logger.setLevel(os.getenv('LOG_LEVEL', 'INFO'))
+# Setup structured logging
+logging.basicConfig(
+    level=os.getenv('LOG_LEVEL', 'INFO'),
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
+logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
 

@@ -1,0 +1,13 @@
+**/.git
+**/.svn
+**/.hg
+**/CVS
+**/.DS_Store
+**/node_modules
+**/bower_components
+**/*.code-search
+**/.vscode
+**/.pytest_cache
+**/__pycache__
+**/venv
+**/.env

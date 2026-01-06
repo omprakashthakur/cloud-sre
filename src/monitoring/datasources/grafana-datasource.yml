@@ -1,3 +1,6 @@
+# Grafana Datasource Configuration
+# yaml-language-server: disable
+
 apiVersion: 1
 
 datasources:
